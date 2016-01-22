@@ -55,8 +55,8 @@ function resolved(selection, content) {
 function resolveSelection(selection, input, selections) {
     if (selection.resolved) {
       return selection;
-    } else if (selection instanceof Reference) {
-        var newContent = selections[selector.content.ref];
+    } else if (selection.content instanceof Reference) {
+        var newContent = selections[selection.content.ref];
         var res = resolved(selection, newContent);
         return res;
     } else if (selection.content instanceof Function) {
@@ -64,7 +64,7 @@ function resolveSelection(selection, input, selections) {
         var res = resolved(selection, newContent);
         return res;
     } else {
-        throw "invalid selection:: " + selection;
+        throw "invalid selection: " + selection;
     }
 }
 
@@ -129,5 +129,6 @@ function check(path, f, selections) {
 module.exports = {
   Checker: Checker,
   Rule: Rule,
-  Selection: Selection
+  Selection: Selection,
+  Reference: Reference
 }
