@@ -1,131 +1,133 @@
+"use strict";
+
 var _ = require('lodash');
 
-function ModelConstraints() {
-    this.rules = {}
+function Checker() {
+    this.selections = {};
+    this.rules = {};
 }
 
-ModelConstraints.newInstance = function () {
-    var o = new ModelConstraints();
-    return o;
+function Rule() {
+    var args = Array.prototype.slice.call(arguments);
+    this.check = args.pop();
+    this.selections = args;
 }
 
-ModelConstraints.prototype.check = function check(model) {
-    return _.reduce(this.rules, function (result, r, k) {
-            if (_.has(r, 'mode') && r.mode == 'exists') {
-                return checkModelExistsRule(k, r, model, result);
-            } else {
-                return checkModelForallRule(k, r, model, result);
-            }
-        },
-        true);
+function RuleResult(errors) {
+    this.errors = errors;
+    this.succeed = _.isEmpty(errors);
 }
 
-ModelConstraints.prototype.addRule = function (name, rule) {
-    this.rules[name] = rule;
+RuleResult.success = new RuleResult([]);
+RuleResult.error = function(e) {return new RuleResult([e]);}
+
+function mergeRuleResults(r0, r1) {
+    return new RuleResult(r0.errors.concat(r1.errors));
 }
 
-function checkModelExistsRule(name, rule, model, acc) {
-    if (_.has(rule, 'selector') && _.has(rule, 'predicate')) {
-        var selected = rule.selector(model);
-        if (!(_.any(selected, function (x) {return rule.predicate(x)}))) {
-            acc.push[{'ruleName': name, 'elem': selected}];
+
+function Reference(name) {
+    this.ref = name;
+}
+
+function Selection(type, f) {
+    this.type = type;
+    this.content = f;
+    this.resolved = !(f instanceof Reference || f instanceof Function);
+}
+
+Selection.All = function(f) {
+    return new Selection(Selection.All, f);
+}
+
+Selection.Any = function(f) {
+    return new Selection(Selection.Any, f);
+}
+
+Selection.Raw = function(f) {
+    return new Selection(Selection.Raw, f);
+}
+
+function resolved(selection, content) {
+    return new Selection(selection.type, content);
+}
+
+function resolveSelection(selection, input, selections) {
+    if (selection.resolved) {
+      return selection;
+    } else if (selection instanceof Reference) {
+        var newContent = selections[selector.content.ref];
+        var res = resolved(selection, newContent);
+        return res;
+    } else if (selection.content instanceof Function) {
+        var newContent = selection.content(input);
+        var res = resolved(selection, newContent);
+        return res;
+    } else {
+        throw "invalid selection:: " + selection;
+    }
+}
+
+Checker.prototype.run = function(input) {
+    var selections = _.mapValues(this.selections, function (s) { return s(input); });
+    return _.reduce(
+        _.map(this.rules, function(r, name) {
+            var result = r.run(input, selections);
+            result.errors = _.map(result.errors, function(x) { return {name: name, path: x} })
+            return result;
+        }),
+        mergeRuleResults,
+        RuleResult.success
+    );
+}
+
+Rule.prototype.run = function(input, selections) {
+    selections = selections === undefined ? {} : selections;
+    var resolvedSelections = _.map(
+        this.selections,
+        function(s) { return resolveSelection(s, input, selections);}
+    );
+    return check([], _.curry(this.check), resolvedSelections.reverse());
+}
+
+function check(path, f, selections) {
+    var e = selections.pop();
+    if (e == undefined) {
+        if (f) { return RuleResult.success; } else { return RuleResult.error(path); }
+    } else if (e.type === Selection.Any) {
+        path.push(e.content);
+        var test = _.any(
+            e.content,
+            function(x) {
+                var stack = selections.slice();
+                return check([], f(x), stack).succeed;
+            });
+        if (test) {
+            return RuleResult.success;
+        } else {
+            return RuleResult.error(path);
         }
-        return acc;
-    } else {
-        console.log("invalid rule");
-    }
-}
-
-function checkModelForallRule(name, rule, model, acc) {
-    if (_.has(rule, 'selector') && _.has(rule, 'predicate')) {
-        return _.reduce(rule.selector(model), function (result, x) {
-                if (!rule.predicate(x)) {
-                    var violation = {'ruleName': name, 'elem': x};
-                    if (result instanceof Array) {
-                        result.push(violation);
-                    } else {
-                        result = [violation];
-                    }
-                }
-                return result;
+    } else if (e.type === Selection.All) {
+        return _.reduce(
+            e.content,
+            function(res, x) {
+                var currentPath = path.slice()
+                currentPath.push(x);
+                var stack = selections.slice();
+                return mergeRuleResults(res, check(currentPath, f(x), stack));
             },
-            acc);
+            RuleResult.success
+        );
+    } else if (e.type === Selection.Raw) {
+        path.push(e.content);
+        return check(path, f(e.content), selections);
     } else {
-        console.log("invalid rule");
+        throw "Invalid selection type: " + e.type;
     }
-}
-
-function modelRule (selector, predicate, mode) {
-    return {
-        'selector': selector,
-        'predicate': predicate,
-        'mode': mode === undefined ? 'forall' : mode
-    };
-}
-
-
-function TransformationConstraints() {
-    this.rules = {}
-}
-
-TransformationConstraints.newInstance = function () {
-    var o = new TransformationConstraints();
-    return o;
-}
-
-TransformationConstraints.prototype.check = function check(source, target) {
-    return _.reduce(this.rules, function (result, r, k) {
-            return checkTransformationRule(k, r, source, target, result);
-        },
-        true);
-}
-
-TransformationConstraints.prototype.addRule = function (name, rule) {
-    this.rules[name] = rule;
-}
-
-function checkTransformationRule(name, rule, source, target, acc) {
-    if (_.has(rule, 'sourceSelector')
-        && _.has(rule, 'targetSelector')
-        && _.has(rule, 'predicate')) {
-        return _.reduce(rule.sourceSelector(source), function (res, x) {
-                return  _.reduce(rule.targetSelector(target), function (result, y) {
-                    if (!rule.predicate(x, y)) {
-                        var violation = {'ruleName': name, 'source': x, 'target': y};
-                        if (result instanceof Array) {
-                            result.push(violation);
-                        } else {
-                            result = [violation];
-                        }
-                    }
-                    return result;
-                },
-                res);
-            },
-            acc);
-    } else {
-        console.log("invalid rule");
-    }
-}
-
-function transformationRule (sourceSelector, targetSelector, predicate, mode) {
-    return {
-        'sourceSelector': sourceSelector,
-        'targetSelector': targetSelector,
-        'predicate': predicate,
-        'mode': mode === undefined ? 'forall' : mode
-    };
-}
-
-var checkMode = {
-    'forall': 'forall',
-    'exists': 'exists'
 }
 
 module.exports = {
-    'ModelConstraints': ModelConstraints,
-    'modelRule': modelRule,
-    'TransformationConstraints': TransformationConstraints,
-    'transformationRule': transformationRule,
-    'checkMode': checkMode
+  Checker: Checker,
+  Rule: Rule,
+  Selection: Selection
 }

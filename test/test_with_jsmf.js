@@ -1,11 +1,12 @@
-var JSMF  = require('jsmf');
+"use strict";
+var JSMF  = require('jsmf-core');
 var nav   = require('jsmf-magellan');
 var check = require('../index.js');
 var _ = require('lodash');
 var should = require('should');
 
-Class = JSMF.Class;
-Model = JSMF.Model;
+var Class = JSMF.Class;
+var Model = JSMF.Model;
 
 var FSM = new Model('FSM');
 var State = Class.newInstance('State');
@@ -24,29 +25,20 @@ FSM.setModellingElements([StartState, State, EndState, Transition]);
 
 var sample = new Model('sample');
 
-var s0 = StartState.newInstance('start');
-s0.setName('start');
-var s1 = State.newInstance('test1');
-s1.setName('test1');
-var s2 = State.newInstance('test2');
-s2.setName('test2');
-var s3 = EndState.newInstance('finish');
-s3.setName('finish');
+var s0 = StartState.newInstance({name: 'start'});
+var s1 = StartState.newInstance({name: 'test1'});
+var s2 = StartState.newInstance({name: 'test2'});
+var s3 = EndState.newInstance({name: 'finish'});
 
-var t0 = Transition.newInstance('launchTest');
-t0.setName('launchTest');
+var t0 = Transition.newInstance({name: 'launchTest'});
 t0.setNext(s1);
-var t10 = Transition.newInstance('test1Succeeds');
-t10.setName('test1Succeeds');
+var t10 = Transition.newInstance({name: 'test1Succeeds'});
 t10.setNext(s2);
-var t11 = Transition.newInstance('test1Fails');
-t11.setName('test1Fails');
+var t11 = Transition.newInstance({name: 'test1Fails'});
 t11.setNext(s0);
-var t20 = Transition.newInstance('test2Succeeds');
-t20.setName('test2Succeeds');
+var t20 = Transition.newInstance({name: 'test2Succeeds'});
 t20.setNext(s3);
-var t21 = Transition.newInstance('test2Fails');
-t21.setName('test2Fails');
+var t21 = Transition.newInstance({name: 'test2Fails'});
 t21.setNext(s0);
 
 s0.setTransition(t0);
@@ -60,26 +52,32 @@ function states (model) {
     return nav.allInstancesFromModel(State, model);
 }
 
-describe ('jmf with check', function () {
+describe ('jsmf with check', function () {
     it ('allows to check that some elements validate a given property', function (done) {
         function reachEnd (e) {
-            return !(_.isEmpty(nav.allInstancesFromObject(EndState, e)))
+            return !(_.isEmpty(nav.crawl({predicate: nav.hasClass(EndState)}, e)));
         }
-        var cs = check.ModelConstraints.newInstance();
-        var r0 = check.modelRule(states, reachEnd);
-        cs.addRule("end can be reach", r0);
-        cs.check(sample).should.be.true();
+        var cs = new check.Checker();
+        cs.rules["end can be reach"] = new check.Rule(
+            check.Selection.All(states),
+            reachEnd
+        );
+        cs.run(sample).succeed.should.be.true();
         done();
     });
     it ('provides a detailed list of failing elements', function (done) {
         function reachS0 (e) {
-            return !(_.isEmpty(nav.getObjectsFromObject(function (x) { return x == s0 }, e)));
+            return !(_.isEmpty(nav.crawl({predicate: function (x) { return x == s0; }}, e)));
         }
-        var cs = check.ModelConstraints.newInstance();
-        var r0 = check.modelRule(states, reachS0);
-        cs.addRule("reachS0", r0);
-        cs.check(sample).should.have.length(1);
-        cs.check(sample).should.have.containEql({'ruleName': 'reachS0', 'elem': s3});
+        var cs = new check.Checker();
+        cs.rules.reachS0 = new check.Rule(
+            check.Selection.All(states),
+            reachS0
+        );
+        var test = cs.run(sample);
+        test.succeed.should.be.false();
+        test.errors.should.have.length(1);
+        test.errors.should.have.containEql({name: 'reachS0', 'path': [s3]});
         done();
     });
 });
