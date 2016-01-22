@@ -58,8 +58,8 @@ describe ('jsmf with check', function () {
             return !(_.isEmpty(nav.crawl({predicate: nav.hasClass(EndState)}, e)));
         }
         var cs = new check.Checker();
-        cs.rules["end can be reach"] = new check.Rule(
-            check.Selection.All(states),
+        cs.rules["end can be reach"] = check.Rule.define(
+            check.all(states),
             reachEnd
         );
         cs.run(sample).succeed.should.be.true();
@@ -70,8 +70,8 @@ describe ('jsmf with check', function () {
             return !(_.isEmpty(nav.crawl({predicate: function (x) { return x == s0; }}, e)));
         }
         var cs = new check.Checker();
-        cs.rules.reachS0 = new check.Rule(
-            check.Selection.All(states),
+        cs.rules.reachS0 = check.Rule.define(
+            check.all(states),
             reachS0
         );
         var test = cs.run(sample);

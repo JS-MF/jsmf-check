@@ -7,10 +7,19 @@ function Checker() {
     this.rules = {};
 }
 
-function Rule() {
+Checker.prototype.addRule = function(name, selections, test) {
+    this.rules[name] = new Rule(selections, test);
+}
+
+function Rule(selections, check) {
+    this.selections = selections;
+    this.check = check;
+}
+
+Rule.define = function() {
     var args = Array.prototype.slice.call(arguments);
-    this.check = args.pop();
-    this.selections = args;
+    var check = args.pop();
+    return new Rule(args, check);
 }
 
 function RuleResult(errors) {
@@ -36,16 +45,16 @@ function Selection(type, f) {
     this.resolved = !(f instanceof Reference || f instanceof Function);
 }
 
-Selection.All = function(f) {
-    return new Selection(Selection.All, f);
+Selection.all = function(f) {
+    return new Selection(Selection.all, f);
 }
 
-Selection.Any = function(f) {
-    return new Selection(Selection.Any, f);
+Selection.any = function(f) {
+    return new Selection(Selection.any, f);
 }
 
-Selection.Raw = function(f) {
-    return new Selection(Selection.Raw, f);
+Selection.raw = function(f) {
+    return new Selection(Selection.raw, f);
 }
 
 function resolved(selection, content) {
@@ -81,6 +90,11 @@ Checker.prototype.run = function(input) {
     );
 }
 
+Checker.prototype.runOnTransformation = function(input, output) {
+    return this.run({in: input, out: output});
+}
+
+
 Rule.prototype.run = function(input, selections) {
     selections = selections === undefined ? {} : selections;
     var resolvedSelections = _.map(
@@ -94,7 +108,7 @@ function check(path, f, selections) {
     var e = selections.pop();
     if (e == undefined) {
         if (f) { return RuleResult.success; } else { return RuleResult.error(path); }
-    } else if (e.type === Selection.Any) {
+    } else if (e.type === Selection.any) {
         path.push(e.content);
         var test = _.any(
             e.content,
@@ -107,7 +121,7 @@ function check(path, f, selections) {
         } else {
             return RuleResult.error(path);
         }
-    } else if (e.type === Selection.All) {
+    } else if (e.type === Selection.all) {
         return _.reduce(
             e.content,
             function(res, x) {
@@ -118,7 +132,7 @@ function check(path, f, selections) {
             },
             RuleResult.success
         );
-    } else if (e.type === Selection.Raw) {
+    } else if (e.type === Selection.raw) {
         path.push(e.content);
         return check(path, f(e.content), selections);
     } else {
@@ -126,9 +140,21 @@ function check(path, f, selections) {
     }
 }
 
+function onInput(f) {
+    return function(x) {return f(x.in);};
+}
+
+function onOutput(f) {
+    return function(x) {return f(x.out);};
+}
+
 module.exports = {
   Checker: Checker,
   Rule: Rule,
-  Selection: Selection,
+  all: Selection.all,
+  any: Selection.any,
+  raw: Selection.raw,
+  onInput: onInput,
+  onOutput: onOutput,
   Reference: Reference
 }
