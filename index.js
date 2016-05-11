@@ -1,13 +1,13 @@
-"use strict";
+'use strict'
 
-var _ = require('lodash');
+const _ = require('lodash')
 
 /** @constructor
  * Initialize a rule checker
  */
 function Checker() {
-    this.selections = {};
-    this.rules = {};
+    this.selections = {}
+    this.rules = {}
 }
 
 /** Add a rule to the checker
@@ -16,7 +16,7 @@ function Checker() {
  * @param {Function} test - The function that shold be evaluated to true for this rul to pass.
  */
 Checker.prototype.addRule = function(name, selections, test) {
-    this.rules[name] = new Rule(selections, test);
+    this.rules[name] = new Rule(selections, test)
 }
 
 /** @consructor Create a rule.
@@ -24,8 +24,8 @@ Checker.prototype.addRule = function(name, selections, test) {
  * @param {Function} test - The function that shold be evaluated to true for this rul to pass.
  */
 function Rule(selections, check) {
-    this.selections = selections;
-    this.check = check;
+    this.selections = selections
+    this.check = check
 }
 
 /** An alternative to the rul constructor: takes the selections as the first parameters and the evaluation function as the last one
@@ -33,9 +33,9 @@ function Rule(selections, check) {
  *  ie.: `Rule.define(arg1, arg2, ..., argn) = new Rule([arg1,...argn-1], argn)`
  * */
 Rule.define = function() {
-    var args = Array.prototype.slice.call(arguments);
-    var check = args.pop();
-    return new Rule(args, check);
+    var args = Array.prototype.slice.call(arguments)
+    var check = args.pop()
+    return new Rule(args, check)
 }
 
 /** @constructor The result of a rule evaluation
@@ -43,64 +43,62 @@ Rule.define = function() {
  * @member {boolean} succeed - Claims if the rule is valid or not (it succeed if it has no error).
  */
 function RuleResult(errors) {
-    this.errors = errors;
-    this.succeed = _.isEmpty(errors);
+    this.errors = errors
+    this.succeed = _.isEmpty(errors)
 }
 
 /** Create a success RuleResult (without error) */
-RuleResult.success = new RuleResult([]);
+RuleResult.success = new RuleResult([])
 /** Create a single error RuleResult
  * @param e - The error.
  */
-RuleResult.error = function(e) {return new RuleResult([e]);}
+RuleResult.error = (e => new RuleResult([e]))
 
 function mergeRuleResults(r0, r1) {
-    return new RuleResult(r0.errors.concat(r1.errors));
+    return new RuleResult(r0.errors.concat(r1.errors))
 }
 
 
 function Reference(name) {
-    this.ref = name;
+    this.ref = name
 }
 
 function Selection(type, f) {
-    this.type = type;
-    this.content = f;
-    this.resolved = !(f instanceof Reference || f instanceof Function);
+    this.type = type
+    this.content = f
+    this.resolved = !(f instanceof Reference || f instanceof Function)
 }
 
 /** Create a "for all quantified" selection */
 Selection.all = function(f) {
-    return new Selection(Selection.all, f);
+    return new Selection(Selection.all, f)
 }
 
 /** Create an "exists quantified" selection */
 Selection.any = function(f) {
-    return new Selection(Selection.any, f);
+    return new Selection(Selection.any, f)
 }
 
 /** Create a selection that will be passed as-is, to the test function */
 Selection.raw = function(f) {
-    return new Selection(Selection.raw, f);
+    return new Selection(Selection.raw, f)
 }
 
 function resolved(selection, content) {
-    return new Selection(selection.type, content);
+    return new Selection(selection.type, content)
 }
 
 function resolveSelection(selection, input, selections) {
     if (selection.resolved) {
-      return selection;
+      return selection
     } else if (selection.content instanceof Reference) {
-        var newContent = selections[selection.content.ref];
-        var res = resolved(selection, newContent);
-        return res;
+        const newContent = selections[selection.content.ref]
+        return resolved(selection, newContent)
     } else if (selection.content instanceof Function) {
-        var newContent = selection.content(input);
-        var res = resolved(selection, newContent);
-        return res;
+        const newContent = selection.content(input)
+        return resolved(selection, newContent)
     } else {
-        throw "invalid selection: " + selection;
+        throw new Error(`invalid selection: ${selection}`)
     }
 }
 
@@ -111,20 +109,17 @@ function resolveSelection(selection, input, selections) {
  * @param input - The input to validate
  */
 Checker.prototype.run = function(input) {
-    var selections = _.mapValues(this.selections, function (s) { return s(input); });
-    return _.reduce(
-        _.map(this.rules, function(r, name) {
-            var result = r.run(input, selections);
-            result.errors = _.map(result.errors, function(x) { return {name: name, path: x} })
-            return result;
-        }),
-        mergeRuleResults,
-        RuleResult.success
-    );
+    const selections = _.mapValues(this.selections, s => s(input))
+    return _(this.rules)
+      .map((r, name) => {
+            const result = r.run(input, selections)
+            result.errors = _.map(result.errors, path => {return {name, path}})
+            return result})
+      .reduce(mergeRuleResults, RuleResult.success)
 }
 
 Checker.prototype.runOnTransformation = function(input, output) {
-    return this.run({in: input, out: output});
+    return this.run({in: input, out: output})
 }
 
 
@@ -133,65 +128,50 @@ Checker.prototype.runOnTransformation = function(input, output) {
  * @param selections - A set of resolved selections, if required.
  */
 Rule.prototype.run = function(input, selections) {
-    selections = selections === undefined ? {} : selections;
-    var resolvedSelections = _.map(
+    selections = selections === undefined ? {} : selections
+    const resolvedSelections = _.map(
         this.selections,
-        function(s) { return resolveSelection(s, input, selections);}
-    );
-    return check([], _.curry(this.check), resolvedSelections.reverse());
+        s => resolveSelection(s, input, selections)
+    )
+    return check([], _.curry(this.check), resolvedSelections.reverse())
 }
 
 function check(path, f, selections) {
-    var e = selections.pop();
-    if (e == undefined) {
-        if (f) { return RuleResult.success; } else { return RuleResult.error(path); }
-    } else if (e.type === Selection.any) {
-        path.push(e.content);
-        var test = _.any(
-            e.content,
-            function(x) {
-                var stack = selections.slice();
-                return check([], f(x), stack).succeed;
-            });
-        if (test) {
-            return RuleResult.success;
-        } else {
-            return RuleResult.error(path);
-        }
-    } else if (e.type === Selection.all) {
-        return _.reduce(
-            e.content,
-            function(res, x) {
-                var currentPath = path.slice()
-                currentPath.push(x);
-                var stack = selections.slice();
-                return mergeRuleResults(res, check(currentPath, f(x), stack));
-            },
-            RuleResult.success
-        );
-    } else if (e.type === Selection.raw) {
-        path.push(e.content);
-        return check(path, f(e.content), selections);
-    } else {
-        throw "Invalid selection type: " + e.type;
+    const e = selections.pop()
+    if (e == undefined) { return f ? RuleResult.success : RuleResult.error(path) }
+    switch (e.type) {
+        case Selection.any:
+          path.push(e.content)
+          const test = _.some(e.content, x => check([], f(x), selections.slice()).succeed)
+          return test ? RuleResult.success : RuleResult.error(path)
+        case Selection.all:
+          return _.reduce(e.content,
+              (res, x) => {
+                  const currentPath = path.slice()
+                  currentPath.push(x)
+                  const stack = selections.slice()
+                  return mergeRuleResults(res, check(currentPath, f(x), stack))
+              },
+              RuleResult.success)
+        case Selection.raw:
+          path.push(e.content)
+          return check(path, f(e.content), selections)
+        default:
+          throw new Error(`Invalid selection type: ${e.type}`)
     }
 }
 
-function onInput(f) {
-    return function(x) {return f(x.in);};
-}
+function onInput(f) { return (x => f(x.in)) }
 
-function onOutput(f) {
-    return function(x) {return f(x.out);};
-}
+function onOutput(f) { return (x => f(x.out)) }
 
 module.exports = {
-  Checker: Checker,
-  Rule: Rule,
+  Checker,
+  Rule,
   all: Selection.all,
   any: Selection.any,
   raw: Selection.raw,
-  onInput: onInput,
-  onOutput: onOutput,
-  Reference: Reference
+  onInput,
+  onOutput,
+  Reference
 }

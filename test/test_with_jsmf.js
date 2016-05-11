@@ -31,19 +31,19 @@ var s2 = StartState.newInstance({name: 'test2'});
 var s3 = EndState.newInstance({name: 'finish'});
 
 var t0 = Transition.newInstance({name: 'launchTest'});
-t0.setNext(s1);
+t0.next = s1;
 var t10 = Transition.newInstance({name: 'test1Succeeds'});
-t10.setNext(s2);
+t10.next = s2;
 var t11 = Transition.newInstance({name: 'test1Fails'});
-t11.setNext(s0);
+t11.next = s0;
 var t20 = Transition.newInstance({name: 'test2Succeeds'});
-t20.setNext(s3);
+t20.next = s3;
 var t21 = Transition.newInstance({name: 'test2Fails'});
-t21.setNext(s0);
+t21.next = s0;
 
-s0.setTransition(t0);
-s1.setTransition([t10, t11]);
-s2.setTransition([t20, t21]);
+s0.transition = t0;
+s1.transition = [t10, t11];
+s2.transition = [t20, t21];
 
 sample.setReferenceModel(FSM);
 sample.setModellingElements([s0, s1, s2, s3, t0, t10, t11, t20, t21]);
