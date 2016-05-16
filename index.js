@@ -6,7 +6,7 @@ const _ = require('lodash')
  * Initialize a rule checker
  */
 function Checker() {
-    this.selections = {}
+    this.helpers = {}
     this.rules = {}
 }
 
@@ -70,12 +70,12 @@ function Selection(type, f) {
 }
 
 /** Create a "for all quantified" selection */
-Selection.all = function(f) {
+Selection.forall = Selection.all = function(f) {
     return new Selection(Selection.all, f)
 }
 
 /** Create an "exists quantified" selection */
-Selection.any = function(f) {
+Selection.exists = Selection.any = function(f) {
     return new Selection(Selection.any, f)
 }
 
@@ -125,15 +125,15 @@ Checker.prototype.runOnTransformation = function(input, output) {
 
 /** Run a single rule
  * @param input - The input on which the rule is runned
- * @param selections - A set of resolved selections, if required.
+ * @param references - A key-value map, used to resolve references
  */
 Rule.prototype.run = function(input, selections) {
     selections = selections === undefined ? {} : selections
-    const resolvedSelections = _.map(
-        this.selections,
-        s => resolveSelection(s, input, selections)
-    )
-    return check([], _.curry(this.check), resolvedSelections.reverse())
+    const resolvedSelections = _(this.selections)
+      .map(s => resolveSelection(s, input, selections))
+      .reverse()
+      .value()
+    return check([], _.curry(this.check), resolvedSelections)
 }
 
 function check(path, f, selections) {
@@ -161,12 +161,21 @@ function check(path, f, selections) {
     }
 }
 
+function composeCheckers() {
+    const checkers = Array.prototype.slice.call(arguments)
+    const res = new Checker()
+    res.rules = _(checkers).map('rules').reduce((x,y) => Object.assign(x,y))
+    res.helpers = _(checkers).map('helpers').reduce((x,y) => Object.assign(x,y))
+    return res
+}
+
 function onInput(f) { return (x => f(x.in)) }
 
 function onOutput(f) { return (x => f(x.out)) }
 
 module.exports = {
   Checker,
+  composeCheckers,
   Rule,
   all: Selection.all,
   any: Selection.any,
