@@ -1,3 +1,4 @@
+/* eslint es6 */
 'use strict'
 
 const _ = require('lodash')
@@ -100,17 +101,17 @@ function resolved(selection, content) {
 }
 
 function resolveSelection(selection, input, selections) {
-    if (selection.resolved) {
-      return selection
-    } else if (selection.content instanceof Reference) {
-        const newContent = selections[selection.content.ref]
-        return resolved(selection, newContent)
-    } else if (selection.content instanceof Function) {
-        const newContent = selection.content(input)
-        return resolved(selection, newContent)
-    } else {
-        throw new Error(`invalid selection: ${selection}`)
-    }
+  if (selection.resolved) {
+    return selection
+  } else if (selection.content instanceof Reference) {
+    const newContent = selections[selection.content.ref]
+      return resolved(selection, newContent)
+  } else if (selection.content instanceof Function) {
+    const newContent = selection.content(input)
+      return resolved(selection, newContent)
+  } else {
+    throw new Error(`invalid selection: ${selection}`)
+  }
 }
 
 /** Run the checker on the provided input.
@@ -148,7 +149,7 @@ Rule.prototype.run = function(input, selections) {
     selections = selections === undefined ? {} : selections
     const resolvedSelections =
       _.map(this.selections, s => resolveSelection(s, input, selections))
-    return check(_.curry(this.check), resolvedSelections, [], [])
+    return check(this.check, resolvedSelections, [], [])
 }
 
 function check(f, selections, context, path) {
