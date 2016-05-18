@@ -58,6 +58,9 @@ function mergeRuleResults(r0, r1) {
     return new RuleResult(r0.errors.concat(r1.errors))
 }
 
+function ContextualReference(f) {
+    this.selector = f
+}
 
 function Reference(name) {
     this.ref = name
@@ -129,33 +132,42 @@ Checker.prototype.runOnTransformation = function(input, output) {
  */
 Rule.prototype.run = function(input, selections) {
     selections = selections === undefined ? {} : selections
-    const resolvedSelections = _(this.selections)
-      .map(s => resolveSelection(s, input, selections))
-      .reverse()
-      .value()
-    return check([], _.curry(this.check), resolvedSelections)
+    const resolvedSelections =
+      _.map(this.selections, s => resolveSelection(s, input, selections))
+    return check(_.curry(this.check), resolvedSelections, [], [])
 }
 
-function check(path, f, selections) {
-    const e = selections.pop()
-    if (e == undefined) { return f ? RuleResult.success : RuleResult.error(path) }
+function check(f, selections, context, path) {
+    let e = selections.shift()
+    if (e == undefined) { return f.apply(undefined, context) ? RuleResult.success : RuleResult.error(path) }
+    if (e.content instanceof ContextualReference) {
+        selections = selections.slice()
+        e = {type: e.type, content: e.content.selector.call(context)}
+    }
     switch (e.type) {
         case Selection.any:
           path.push(e.content)
-          const test = _.some(e.content, x => check([], f(x), selections.slice()).succeed)
+          const test = _.some(e.content, x => {
+            const ctx = context.slice()
+            ctx.push(x)
+            return check(f, selections.slice(), ctx, []).succeed
+          })
           return test ? RuleResult.success : RuleResult.error(path)
         case Selection.all:
           return _.reduce(e.content,
               (res, x) => {
+                  const ctx = context.slice()
+                  ctx.push(x)
                   const currentPath = path.slice()
                   currentPath.push(x)
                   const stack = selections.slice()
-                  return mergeRuleResults(res, check(currentPath, f(x), stack))
+                  return mergeRuleResults(res, check(f, stack, ctx, currentPath))
               },
               RuleResult.success)
         case Selection.raw:
+          context.push(e.content)
           path.push(e.content)
-          return check(path, f(e.content), selections)
+          return check(f, selections, context, path)
         default:
           throw new Error(`Invalid selection type: ${e.type}`)
     }
@@ -182,5 +194,6 @@ module.exports = {
   raw: Selection.raw,
   onInput,
   onOutput,
-  Reference
+  Reference,
+  ContextualReference
 }

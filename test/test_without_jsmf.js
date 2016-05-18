@@ -77,6 +77,21 @@ describe ('1 selection raw-check on arrays', function () {
         done();
     });
 });
+describe ('InnerReference', function () {
+    it ('map values depending on the context', function(done) {
+        var cs = new ch.Checker();
+        cs.rules['4even'] = ch.Rule.define(
+          ch.all(function(x) {return x.foo;}),
+          ch.any(new ch.ContextualReference(function () {
+            return this[0].filter(function(x) {return x % 2 === 0;});
+          })),
+          function (x,m) {return x.length === m}
+        );
+        cs.run({foo: [[2,3,4,6], [3,2]]}).succeed.should.be.true();
+        done();
+    });
+});
+
 
 describe('Transformation.check', function () {
     it('works on valid transformation', function (done) {
