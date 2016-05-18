@@ -80,7 +80,7 @@ describe ('1 selection raw-check on arrays', function () {
 describe ('InnerReference', function () {
     it ('map values depending on the context', function(done) {
         var cs = new ch.Checker();
-        cs.rules['4even'] = ch.Rule.define(
+        cs.rules['evenSizeInTheList'] = ch.Rule.define(
           ch.all(function(x) {return x.foo;}),
           ch.any(new ch.ContextualReference(function () {
             return this[0].filter(function(x) {return x % 2 === 0;});

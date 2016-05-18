@@ -115,7 +115,6 @@ Checker.prototype.run = function(input) {
     const selections = _.mapValues(this.helpers, s => s(input))
     return _(this.rules)
       .map((r, name) => {
-            console.log(selections)
             const result = r.run(input, selections)
             result.errors = _.map(result.errors, path => {return {name, path}})
             return result})
@@ -195,6 +194,6 @@ module.exports = {
   raw: Selection.raw,
   onInput,
   onOutput,
-  Reference,
-  ContextualReference
+  Reference: function(x) {return new Reference(x)},
+  ContextualReference: function(x) {return new ContextualReference(x)},
 }
