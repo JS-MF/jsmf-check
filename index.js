@@ -55,7 +55,15 @@ RuleResult.success = new RuleResult([])
 RuleResult.error = (e => new RuleResult([e]))
 
 function mergeRuleResults(r0, r1) {
-    return new RuleResult(r0.errors.concat(r1.errors))
+    return new RuleResult(mergeErrors(r0.errors, r1.errors))
+}
+
+function mergeErrors(e0, e1) {
+  if (e0 instanceof Array) {
+    return e0.concat(e1)
+  } else if (e0 instanceof Object) {
+    return Object.assign.apply(undefined, [e0,e1])
+  }
 }
 
 function ContextualReference(f) {
@@ -113,12 +121,18 @@ function resolveSelection(selection, input, selections) {
  */
 Checker.prototype.run = function(input) {
     const selections = _.mapValues(this.helpers, s => s(input))
-    return _(this.rules)
+    const result = _(this.rules)
       .map((r, name) => {
-            const result = r.run(input, selections)
-            result.errors = _.map(result.errors, path => {return {name, path}})
-            return result})
-      .reduce(mergeRuleResults, RuleResult.success)
+         const result = r.run(input, selections)
+         if (!_.isEmpty(result.errors)) {
+            const errors = result.errors
+            result.errors = {}
+            result.errors[name] = errors
+         }
+         return result
+      }).reduce(mergeRuleResults, RuleResult.success)
+    if (!_.isEmpty(result.errors)) { result.errors = Object.assign.apply(undefined, result.errors) }
+    return result
 }
 
 Checker.prototype.runOnTransformation = function(input, output) {
