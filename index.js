@@ -81,19 +81,13 @@ function Selection(type, f) {
 }
 
 /** Create a "for all quantified" selection */
-Selection.forall = Selection.all = function(f) {
-  return new Selection(Selection.all, f)
-}
+Selection.forall = Selection.all = f => new Selection(Selection.all, f)
 
 /** Create an "exists quantified" selection */
-Selection.exists = Selection.any = function(f) {
-  return new Selection(Selection.any, f)
-}
+Selection.exists = Selection.any = f => new Selection(Selection.any, f)
 
 /** Create a selection that will be passed as-is, to the test function */
-Selection.raw = function(f) {
-  return new Selection(Selection.raw, f)
-}
+Selection.raw = f => new Selection(Selection.raw, f)
 
 function resolved(selection, content) {
   return new Selection(selection.type, content)
