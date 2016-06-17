@@ -1,7 +1,7 @@
 "use strict";
 const JSMF   = require('jsmf-core')
 const nav    = require('jsmf-magellan')
-const check  = require('../index.js')
+const check  = require('../src/index.js')
 const _      = require('lodash')
 const should = require('should')
 

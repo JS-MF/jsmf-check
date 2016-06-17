@@ -23,9 +23,6 @@ var Mi = require('./MFamily.js');
 //Create the outputModel
 var Mo = new Model('Out');
 
-var inspect = require('eyes').inspector({
-    maxLength: 9000
-});
 
 // <=> to the underscore library.
 var _ = require('lodash');
@@ -73,7 +70,7 @@ var Member2Male = {
 var Member2FeMale = {
 
     in : function(inputModel) {
-        return  _.select(inputModel.Filter(MMI.Member),
+        return  _.filter(inputModel.Filter(MMI.Member),
                     function(elem){
                         return isFemale(elem);
                     });
@@ -92,7 +89,7 @@ mod.addRule(Member2FeMale);
 
 // Verification rules
 var checker = new check.Checker();
-checker.selections.inputMembers = check.onInput(function (x) { return nav.allInstancesFromModel(MMI.Member, x); });
+checker.helpers.inputMembers = check.onInput(function (x) { return nav.allInstancesFromModel(MMI.Member, x); });
 checker.rules["same cardinality"] = new check.Rule.define(
     check.raw(new check.Reference('inputMembers')),
     check.raw(check.onOutput(function (x) {return nav.allInstancesFromModel(MMO.Person, x)})),

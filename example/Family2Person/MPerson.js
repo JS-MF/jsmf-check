@@ -1,28 +1,30 @@
-var JSMF = require('jsmf'); var Model = JSMF.Model; var Class = JSMF.Class;
-var MM = require('./MMFamily.js');
+const JSMF = require('jsmf')
+    , Model = JSMF.Model
 
-var ma = new Model('a');
-var familyMarch = MM.Family.newInstance('march');
-familyMarch.setLastName('March');
-var fatherM = MM.Member.newInstance('Jim');
-var motherM = MM.Member.newInstance('Cindy');
-var sonM = MM.Member.newInstance('Brandon');
-var daughterM = MM.Member.newInstance('Brenda');
+const MM = require('./MMFamily.js')
 
-familyMarch.setFather(fatherM);
-familyMarch.setMother(MotherM);
-familyMarch.setSons(sonM);
-familyMarch.setDaughters(daughterM);
+const ma = new Model('a')
+const familyMarch = MM.Family.newInstance()
+familyMarch.lastName = 'March'
+const fatherM = MM.Member.newInstance()
+const motherM = MM.Member.newInstance()
+const sonM = MM.Member.newInstance()
+const daughterM = MM.Member.newInstance()
 
-var familySailor = MM.Family.newInstance('Sailor');
-familySailor.setLastName('Sailor');
-var FatherS = MM.Member.newInstance('Peter');
-var MotherS = MM.Member.newInstance('Jackie');
-var SonS1 = MM.Member.newInstance('David');
-var Sons2 = MM.Member.newInstance('Dylan');
-var DaughterS = MM.Member.newInstance('Kelly');
+familyMarch.setFather(fatherM)
+familyMarch.setMother(MotherM)
+familyMarch.setSons(sonM)
+familyMarch.setDaughters(daughterM)
 
-familySailor.setFather(FatherS);
-familySailor.setMother(MotherS);
-familySailor.setSons([SonS1,SonS2]);
-familySailor.setDaughters(DaughterS);
+const familySailor = MM.Family.newInstance()
+familySailor.setLastName('Sailor')
+const FatherS = MM.Member.newInstance()
+const MotherS = MM.Member.newInstance()
+const SonS1 = MM.Member.newInstance()
+const Sons2 = MM.Member.newInstance()
+const DaughterS = MM.Member.newInstance()
+
+familySailor.setFather(FatherS)
+familySailor.setMother(MotherS)
+familySailor.setSons([SonS1,SonS2])
+familySailor.setDaughters(DaughterS)
