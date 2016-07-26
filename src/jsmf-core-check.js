@@ -54,7 +54,7 @@ const referenceMaxCardinalityRule = new check.Rule(
       return _.map(core.conformsTo(this[0]).getAllReferences(), (props, name) => {return {name, cardinality: props.cardinality}})
     }))
     ],
-    (e, r) => e[r.name].length <= r.cardinality.max
+    (e, r) => (r.cardinality.max === undefined) || (e[r.name].length <= r.cardinality.max)
 )
 
 const referencesTypeRule = new check.Rule(
