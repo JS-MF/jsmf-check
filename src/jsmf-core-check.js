@@ -97,6 +97,9 @@ const noExtraProperties = new check.Rule(
     (e, elemA, classAs) => _.includes(classAs, elemA)
 )
 
+/** @global
+ * @constant {Checker} A specific checker for JSMF conformance checking
+ */
 const conformance = new check.Checker()
 
 conformance.rules =
@@ -108,6 +111,9 @@ conformance.rules =
   , noExtraProperties
   }
 
+/** Gather the elements that must be conformance checked
+ * @param e - a JSMF elelement
+ */
 conformance.helpers.elements = e => {
   if (e instanceof Model) {
     return e.elements()
@@ -118,6 +124,8 @@ conformance.helpers.elements = e => {
   throw new TypeError(`Invalid argument for conformance: ${e}`)
 }
 
+/** Allows conformance check for a whole model.
+ */
 Model.prototype.check = function checkModel() {
   const instanceChecker = _.get(this, ['referenceModel', 'instanceChecker'])
   const checker = instanceChecker
@@ -126,32 +134,38 @@ Model.prototype.check = function checkModel() {
   return checker.run(this)
 }
 
+/** @member {Object} Define an instance checker, which allows the definition of
+ * instance specific validation rules for the conformance checker
+ */
 Object.defineProperty(Model.prototype, 'instanceChecker',
   { get: function () {
-      let result = _.get(this, ['__jsmf__', 'instanceChecker'])
-      if (!result) {
-        result = new check.Checker()
-        this.__jsmf__.instanceChecker = result
-      }
-      return result
+    let result = _.get(this, ['__jsmf__', 'instanceChecker'])
+    if (!result) {
+      result = new check.Checker()
+      this.__jsmf__.instanceChecker = result
     }
+    return result
+  }
   , set: function (c) {
-     this.__jsmf__.instanceChecker = c
-    }
+    this.__jsmf__.instanceChecker = c
+  }
   })
 
+/** @member {Object} Define an instance checker, which allows the definition of
+ * instance specific validation rules for the conformance checker
+ */
 Object.defineProperty(Model.prototype, 'checker',
   { get: function () {
-      let result = _.get(this, ['__jsmf__', 'checker'])
-      if (!result) {
-        result = new check.Checker()
-        this.__jsmf__.checker = result
-      }
-      return result
+    let result = _.get(this, ['__jsmf__', 'checker'])
+    if (!result) {
+      result = new check.Checker()
+      this.__jsmf__.checker = result
     }
+    return result
+  }
   , set: function (c) {
-     this.__jsmf__.checker = c
-    }
+    this.__jsmf__.checker = c
+  }
   })
 
 module.exports = _.assign({}, conformance.rules, { conformance })
