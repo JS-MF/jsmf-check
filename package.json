@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@git.list.lu:jsmf/jsmf-check.git"
+    "url": "https://github.com/JS-MF/jsmf-check.git"
   },
   "keywords": [
     "Model",
@@ -25,11 +25,11 @@
   },
   "devDependencies": {
     "assert": "^1.3.0",
-    "jsmf-core": "^0.10.0",
-    "jsmf-jstl": "^0.10.0",
-    "jsmf-magellan": "^0.7.0",
-    "mocha": "^2.5.3",
-    "should": "^7.1.1"
+    "jsmf-core": "^0.11.0",
+    "jsmf-jstl": "^0.11.0",
+    "jsmf-magellan": "^0.8.2",
+    "mocha": "^3.0.2",
+    "should": "^11.1.0"
   },
   "author": "Nicolas Biri <nicolas.biri@list.lu> (http://list.lu/)",
   "license": "MIT"
