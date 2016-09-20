@@ -1,6 +1,6 @@
 {
   "name": "jsmf-check",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Constraints language and verification for JSMF models",
   "main": "src/index.js",
   "directories": {
